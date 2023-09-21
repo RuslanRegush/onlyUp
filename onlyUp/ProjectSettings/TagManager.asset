@@ -6,6 +6,7 @@ TagManager:
   tags:
   - bbox
   - player
+  - Aripi
   layers:
   - Default
   - TransparentFX

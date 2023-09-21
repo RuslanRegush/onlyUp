@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Windows;
-
+using TMPro;
 public class cameraScript : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5;
@@ -15,6 +15,8 @@ public class cameraScript : MonoBehaviour
     [SerializeField] float jumpHeight = 2;
     [SerializeField] GameObject groundCheck;
     [SerializeField] LayerMask groundLayer;
+    public TextMeshProUGUI timpText;
+
     Rigidbody rb;
     bool hanging;
     bool canMove = true;
@@ -24,12 +26,12 @@ public class cameraScript : MonoBehaviour
     Vector3 yclimbing;
     float reachDistance;
 
-
     public Animator animator;
     private move input;
     private CharacterController controller;
     [SerializeField] Transform cameraFollowTarget;
     [SerializeField] GameObject mainCam;
+    [SerializeField] GameObject wings;
     float xRotation;
     float yRotation;
 
@@ -40,11 +42,62 @@ public class cameraScript : MonoBehaviour
         input = GetComponent<move>();
         controller = GetComponent<CharacterController>();
         animator = GetComponentInChildren<Animator>();
+        wings.gameObject.SetActive(false);
+        timpText.gameObject.SetActive(false);
     }
+    public void fly()
+    {
+       // if (UnityEngine.Input.GetKey(KeyCode.T))
+        {
+            //transform.position = new Vector3(0, 0, 0);
+            velocity.y = 10;
+            //velocity.z += 5;
+            Debug.Log("T");
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.CompareTag("Aripi"))
+        {
+            if (1 == 2)
+            {
+                wings.gameObject.SetActive(true);
+                timp = 0;
+                InvokeRepeating("fly", 0, 0.5f);
+                zboara = true;
+                Destroy(other.gameObject);
+                timpText.gameObject.SetActive(true);
+                Debug.Log("col");
+            } else
+            {
+                velocity.y = 100;
+            }
+        }
+    }
+
+    public float timpul = 5f;
+    public float timp = 0f;
+    public bool zboara = false;
 
     // Update is called once per frame
     void Update()
     {
+      if(zboara)
+        {
+            timp += Time.deltaTime;
+            timpText.text = "" + timp.ToString("F2") + "/5";
+        }
+
+      if(timp >= timpul)
+        {
+            zboara = false;
+            wings.gameObject.SetActive(false);
+            CancelInvoke("fly");
+            timpText.gameObject.SetActive(false);
+
+            timp = 0;
+        }
         if (canMove)
         {
             // Toggle running when Shift key is held
@@ -62,31 +115,10 @@ public class cameraScript : MonoBehaviour
             Movement();
 
             JumpAndGravity();
-            if (UnityEngine.Input.GetKeyDown(KeyCode.Space))
-            {
-                // Perform a raycast to detect climbable surfaces
-                RaycastHit hit;
-                if (Physics.Raycast(transform.position, transform.forward, out hit, reachDistance))
-                {
-                    if (hit.collider.CompareTag("Climbable"))
-                    {
-                        // Start climbing
-                        StartClimbing(hit.transform);
-                    }
-                }
-            }
         }
        // LedgeGrab();
     }
-    private bool isClimbing = false;
-    private Transform climbingSurface;
-    void StartClimbing(Transform surface)
-    {
-        isClimbing = true;
-        climbingSurface = surface;
-
-        animator.SetBool("climbing", true);
-    }
+  
     void CameraRotation()
     {
         xRotation += input.look.y;
@@ -133,85 +165,34 @@ public class cameraScript : MonoBehaviour
         // Check if the character is grounded
 
         isGrounded = Physics.CheckSphere(groundCheck.transform.position, .2f, groundLayer);
-        
+
         // Check for jump input
-        if (isGrounded)
+        if (isGrounded && UnityEngine.Input.GetKey(KeyCode.Space))
         {
-            if (UnityEngine.Input.GetKey(KeyCode.Space))
-            {
-                
-                    velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
-                    StartCoroutine(EnableCanMove(0.25f));
-                    animator.SetBool("grownded", true);
-                    animator.SetBool("Jump", true);
-            }
+            velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
+            animator.SetBool("grownded", false);
+            animator.SetBool("Jump", true);
+            //animator.SetBool("fall", true);
+
+        }
+        else if (isGrounded)
+        {
+
+            animator.SetBool("grownded", true);
+            animator.SetBool("Jump", false);
+            animator.SetBool("fall", false);
+
+
         }
         else
         {
             velocity.y += gravity * Time.deltaTime;
             animator.SetBool("grownded", false);
             animator.SetBool("Jump", false);
+            animator.SetBool("fall", true);
         }
         controller.Move(velocity * Time.deltaTime);
-        //animator.SetBool("Jump", true);
-        //animator.SetBool("Jump", false);
-        // Move the character with updated velocity
 
-    }
-    private void OnTriggerEnter(Collider other)
-    {
-        Debug.Log("INTRA");
-        if (other.CompareTag("bbox") )//&& UnityEngine.Input.GetKeyDown(KeyCode.Space))
-        {
-            animator.SetBool("climbing", true);
-            Debug.Log("atingere");
-            Vector3 nouaPozitie = new Vector3(0, 0, 0);
-            transform.position = nouaPozitie;
-          
-
-
-
-        }
-    }
-    IEnumerator EnableCanMove(float waitTime)
-    {
-        yield return new WaitForSeconds(waitTime);
-        canMove = true;
-    }
-    private void OnTriggerExit(Collider other)
-    {
-        animator.SetBool("climbing", false);
-    }
-    void LedgeGrab()
-    {
-        if(rb.velocity.y < 0 && !hanging) { 
-        RaycastHit downHit;
-        Vector3 lineDownStart = (transform.position + Vector3.up*1.5f)+transform.forward;
-        Vector3 LineDownEnd = (transform.position + Vector3.up * 0.7f) + transform.forward; ;
-        Physics.Linecast(lineDownStart, LineDownEnd,out downHit,LayerMask.GetMask("ground"));  
-        Debug.DrawLine(lineDownStart, LineDownEnd);
-            if (downHit.collider != null)
-            {
-                RaycastHit fwHit;
-                Vector3 lineFwStart = new Vector3(transform.position.x, downHit.point.y - 0.1f, transform.position.z);
-                Vector3 LineFwEnd = new Vector3(transform.position.x, downHit.point.y - 0.1f, transform.position.z);
-                Physics.Linecast(lineFwStart, LineFwEnd, out fwHit, LayerMask.GetMask("ground"));
-                Debug.DrawLine(lineFwStart, LineFwEnd);
-                if (fwHit.collider != null)
-                {
-                    gravity = 0;
-                    rb.velocity = Vector3.zero;
-                    hanging = true;
-                    //animator.SetBool("climbing", true);
-                    Vector3 hangPos = new Vector3(fwHit.point.x, downHit.point.y,fwHit.point.z);
-                    Vector3 offset = transform.forward * -0.1f + transform.up * -1f;
-                    hangPos += offset;
-                    transform.position = hangPos;
-                    transform.forward = -fwHit.normal;
-                    canMove = false;
-                }
-            }
-        }
     }
 
 }

@@ -39,5 +39,5 @@ public class move : MonoBehaviour
     {
         jump = value.isPressed;
     }
-  
+    
 }
