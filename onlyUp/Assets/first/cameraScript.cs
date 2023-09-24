@@ -60,7 +60,7 @@ public class cameraScript : MonoBehaviour
     {
         if(other.gameObject.CompareTag("Aripi"))
         {
-            if (1 == 2)
+            if (1 == 0)
             {
                 wings.gameObject.SetActive(true);
                 timp = 0;
@@ -71,7 +71,7 @@ public class cameraScript : MonoBehaviour
                 Debug.Log("col");
             } else
             {
-                velocity.y = 100;
+                velocity.y = 25;
             }
         }
     }
